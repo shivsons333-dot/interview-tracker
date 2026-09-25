@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interview Tracker</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --ink:#1d2433; --muted:#667085; --line:#e3e7ee;
+  --pri:#2457c5; --pri-ink:#fff; --pri-soft:#e8efff;
+  --ok:#157a3c; --ok-soft:#e3f5ea; --bad:#b42318; --bad-soft:#fdeceb;
+  --wait:#9a6700; --wait-soft:#fff4d6; --hold:#6941c6; --hold-soft:#f1ebff;
+  --pend:#475467; --pend-soft:#eef1f5; --rep:#c2410c; --rep-soft:#fff1e6;
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#14233f;color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;font-weight:600}
+header .conn{font-size:12px;opacity:.85;margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+header .dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#999;margin-right:4px}
+header .dot.on{background:#3ccf6e} header .dot.err{background:#f04438}
+header button{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px}
+nav{display:flex;gap:4px;padding:0 20px;background:#fff;border-bottom:1px solid var(--line);overflow-x:auto}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:12px 14px;font-size:14px;cursor:pointer;color:var(--muted);white-space:nowrap}
+nav button.active{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+main{max-width:1250px;margin:0 auto;padding:20px}
+section{display:none} section.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 4px;font-size:16px} .card h3{margin:16px 0 8px;font-size:14px;color:var(--pri)}
+.muted{color:var(--muted)} .small{font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer}
+.stat b{display:block;font-size:22px} .stat span{font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 16px}
+.grid .full{grid-column:1/-1}
+label{display:block;font-size:12px;font-weight:600;color:#344054;margin-bottom:4px}
+label .req{color:var(--bad)}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid #cfd5df;border-radius:7px;font:inherit;background:#fff;color:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--pri-soft);border-color:var(--pri)}
+textarea{min-height:70px;resize:vertical}
+.btn{background:var(--pri);color:var(--pri-ink);border:0;border-radius:7px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{filter:brightness(1.08)} .btn:disabled{opacity:.5;cursor:default}
+.btn-sec{background:#fff;color:var(--ink);border:1px solid #cfd5df;border-radius:7px;padding:9px 16px;font:inherit;cursor:pointer}
+.btn-danger{background:var(--bad);color:#fff;border:0;border-radius:7px;padding:9px 16px;font:inherit;font-weight:600;cursor:pointer}
+.actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.toolbar input{flex:1;min-width:200px} .toolbar select{width:auto;min-width:150px}
+.tablewrap{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:900px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:#f8f9fb;font-size:12px;color:var(--muted);font-weight:600;position:sticky;top:0}
+tr.repeat td:first-child{box-shadow:inset 4px 0 0 var(--rep)}
+tr:hover td{background:#fafbfd}
+.link{background:none;border:0;color:var(--pri);cursor:pointer;padding:2px 4px;font:inherit;font-size:13px}
+.link.danger{color:var(--bad)}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-Selected{background:var(--ok-soft);color:var(--ok)}
+.b-Not{background:var(--bad-soft);color:var(--bad)}
+.b-Waiting{background:var(--wait-soft);color:var(--wait)}
+.b-On{background:var(--hold-soft);color:var(--hold)}
+.b-Pending{background:var(--pend-soft);color:var(--pend)}
+.b-rep{background:var(--rep-soft);color:var(--rep)}
+.alert{border-radius:8px;padding:12px 14px;margin:10px 0;font-size:13px}
+.alert.warn{background:var(--rep-soft);border:1px solid #fdba8c;color:#7c2d12}
+.alert.info{background:var(--pri-soft);border:1px solid #b6c8f5;color:#1b3d8a}
+.alert.err{background:var(--bad-soft);border:1px solid #f5b5b0;color:var(--bad)}
+.alert.ok{background:var(--ok-soft);border:1px solid #a6dfbb;color:var(--ok)}
+.alert ul{margin:6px 0 0;padding-left:18px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px}
+.kv div{font-size:13px} .kv b{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.round{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:8px 0;background:#fcfcfd}
+.stars{color:#e8a200;letter-spacing:1px}
+#modal{position:fixed;inset:0;background:rgba(16,24,40,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;z-index:50;overflow-y:auto}
+#modal.open{display:flex}
+#modal .box{background:#fff;border-radius:12px;padding:20px;width:100%;max-width:460px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#modal .box.wide{max-width:900px}
+#modal h3{margin:0 0 10px}
+#busy{position:fixed;inset:0;background:rgba(255,255,255,.6);display:none;align-items:center;justify-content:center;z-index:60;font-weight:600}
+#busy.open{display:flex}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1d2433;color:#fff;padding:10px 18px;border-radius:8px;display:none;z-index:70;max-width:90vw}
+#toast.show{display:block} #toast.err{background:var(--bad)}
+.err-text{color:var(--bad);font-size:12px;margin-top:4px;min-height:1em}
+.ok-text{color:var(--ok);font-size:12px;margin-top:4px}
+.cand-summary{background:#f8f9fb;border:1px solid var(--line);border-radius:8px;padding:12px;margin:10px 0}
+#gate{min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;background:linear-gradient(160deg,#14233f 0,#1f3b73 55%,#f4f6f9 55%)}
+.gate-card{background:#fff;border-radius:14px;box-shadow:0 20px 50px rgba(0,0,0,.2);padding:26px;width:100%;max-width:440px}
+.gate-card.wide{max-width:640px}
+.gate-card h1{margin:0 0 4px;font-size:22px}
+.gate-card label{margin-top:12px}
+.gate-card .btn{width:100%;margin-top:16px;padding:11px}
+.gate-links{margin-top:14px;text-align:center;font-size:12px}
+.gate-links .link{font-size:12px}
+.lockicon{display:inline-block;width:34px;height:34px;border-radius:50%;background:var(--pri-soft);color:var(--pri);text-align:center;line-height:34px;font-weight:700;margin-bottom:8px}
+[hidden]{display:none!important}
+@media (max-width:640px){main{padding:12px}.card{padding:14px}}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN / SETUP GATE ================= -->
+<div id="gate">
+  <div class="gate-card" id="gate-card">
+    <div id="gate-loading"><h1>Interview Tracker</h1><p class="muted">Loading…</p></div>
+
+    <!-- Team login -->
+    <div id="gate-login" hidden>
+      <div class="lockicon">&#128274;</div>
+      <h1>Interview Tracker</h1>
+      <p class="muted small">For the HR team only. All data is encrypted with the team password.</p>
+      <form id="login-form" autocomplete="off">
+        <label>Your name</label><input id="g-name" placeholder="Shown in the activity log">
+        <label>Team password</label><input id="g-pw" type="password" autocomplete="current-password">
+        <div class="err-text" id="g-err"></div>
+        <button class="btn" type="submit">Open</button>
+      </form>
+      <div class="gate-links"><button class="link" id="g-fix">Admin: replace expired GitHub token</button></div>
+    </div>
+
+    <!-- First-time setup -->
+    <div id="gate-setup" hidden>
+      <h1>First-time setup</h1>
+      <p class="muted small">Admin only, done once. Everything you enter here is encrypted before it is saved to GitHub.</p>
+      <form id="setup-form" autocomplete="off">
+        <div class="grid">
+          <div><label>GitHub username</label><input name="owner" placeholder="e.g. shivsons"></div>
+          <div><label>Repository name</label><input name="repo" placeholder="e.g. interview-tracker"></div>
+          <div class="full"><label>GitHub access token</label><input name="token" type="password" placeholder="github_pat_…"><div class="muted small">Fine-grained token → only this repository → Contents: Read and write. (See the setup guide.)</div></div>
+          <div><label>Team password (min 10 characters)</label><input name="teamPw" type="password" autocomplete="new-password"></div>
+          <div><label>Repeat team password</label><input name="teamPw2" type="password" autocomplete="new-password"></div>
+          <div><label>Admin password (min 8, different)</label><input name="adminPw" type="password" autocomplete="new-password"></div>
+          <div><label>Repeat admin password</label><input name="adminPw2" type="password" autocomplete="new-password"></div>
+          <div class="full"><label>Your name</label><input name="user"></div>
+        </div>
+        <div class="err-text" id="s-err"></div>
+        <button class="btn" type="submit">Set up &amp; open</button>
+      </form>
+    </div>
+
+    <!-- Replace GitHub token -->
+    <div id="gate-fix" hidden>
+      <h1>Replace GitHub token</h1>
+      <p class="muted small">Use this when GitHub tokens expire. Needs both the team and the admin password.</p>
+      <form id="fix-form" autocomplete="off">
+        <label>Team password</label><input name="teamPw" type="password">
+        <label>Admin password</label><input name="adminPw" type="password">
+        <label>New GitHub token</label><input name="token" type="password" placeholder="github_pat_…">
+        <label>Your name</label><input name="user">
+        <div class="err-text" id="f-err"></div>
+        <button class="btn" type="submit">Save new token &amp; open</button>
+      </form>
+      <div class="gate-links"><button class="link" id="f-back">Back to login</button></div>
+    </div>
+
+    <!-- Repo location (only when opened outside GitHub Pages) -->
+    <div id="gate-where" hidden>
+      <h1>Interview Tracker</h1>
+      <p class="muted small">This file was opened from your computer, so the app doesn't know which GitHub repository to use. Enter it once. (If you open the app from its GitHub Pages link, it finds the repository by itself.)</p>
+      <form id="where-form" autocomplete="off">
+        <label>GitHub username</label><input name="owner">
+        <label>Repository name</label><input name="repo">
+        <div class="err-text" id="w-err"></div>
+        <button class="btn" type="submit">Continue</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="app" hidden>
+<header>
+  <h1>Interview Tracker</h1>
+  <div class="conn">
+    <span id="conn-status"><span class="dot"></span>Not connected</span>
+    <span id="lock-status"></span>
+    <button id="btn-refresh" title="Load the latest data">Refresh</button>
+    <button id="btn-lock" title="Log out of the app">Log out</button>
+  </div>
+</header>
+
+<nav>
+  <button data-tab="list" class="active">Candidates</button>
+  <button data-tab="add">Phase 1 · HR Entry</button>
+  <button data-tab="feedback">Phase 2 · Interview Feedback</button>
+  <button data-tab="settings">Admin</button>
+</nav>
+
+<main>
+  <!-- ============ LIST ============ -->
+  <section id="tab-list" class="active">
+    <div class="stats" id="stats"></div>
+    <div class="toolbar">
+      <input id="f-search" placeholder="Search name, Aadhaar, mobile, position, ref no…">
+      <select id="f-status"><option value="">All statuses</option></select>
+      <select id="f-dept"><option value="">All departments</option></select>
+      <select id="f-repeat"><option value="">All candidates</option><option value="rep">Repeat only</option></select>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr>
+        <th>Ref</th><th>Candidate</th><th>Aadhaar</th><th>Position / Dept</th><th>Interview date</th>
+        <th>Status</th><th>Offered</th><th>Actions</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table></div>
+    <p class="muted small" id="list-foot"></p>
+  </section>
+
+  <!-- ============ PHASE 1 ============ -->
+  <section id="tab-add">
+    <div class="card">
+      <h2 id="add-title">Phase 1 · Candidate details (HR)</h2>
+      <p class="muted small">Filled by HR before the candidate is presented for interview. Fields marked <span style="color:var(--bad)">*</span> are required.</p>
+      <form id="form-add" autocomplete="off">
+        <h3>Identity</h3>
+        <div class="grid">
+          <div><label>Aadhaar number <span class="req">*</span></label><input name="aadhaar" id="in-aadhaar" inputmode="numeric" maxlength="14" placeholder="1234 5678 9012"><div class="err-text" id="aadhaar-msg"></div></div>
+          <div><label>Full name <span class="req">*</span></label><input name="name"></div>
+          <div><label>Mobile <span class="req">*</span></label><input name="phone" inputmode="tel" maxlength="15"></div>
+          <div><label>Email</label><input name="email" type="email"></div>
+          <div><label>Date of birth</label><input name="dob" type="date"></div>
+          <div><label>Gender</label><select name="gender"><option></option><option>Male</option><option>Female</option><option>Other</option></select></div>
+          <div class="full" id="dup-box"></div>
+        </div>
+        <h3>Background</h3>
+        <div class="grid">
+          <div><label>Qualification</label><input name="qualification"></div>
+          <div><label>Total experience (years)</label><input name="experience" type="number" min="0" step="0.5"></div>
+          <div><label>Current / last company</label><input name="currentCompany"></div>
+          <div><label>Current location</label><input name="location"></div>
+          <div><label>Current CTC (₹ per annum)</label><input name="currentCTC" type="number" min="0"></div>
+          <div><label>Expected CTC (₹ per annum)</label><input name="expectedCTC" type="number" min="0"></div>
+          <div><label>Notice period (days)</label><input name="noticePeriod" type="number" min="0"></div>
+          <div><label>Resume link</label><input name="resumeLink" placeholder="Drive / OneDrive link"></div>
+        </div>
+        <h3>Interview plan</h3>
+        <div class="grid">
+          <div><label>Position applied for <span class="req">*</span></label><input name="position"></div>
+          <div><label>Department <span class="req">*</span></label><select name="department" class="dept-select"></select></div>
+          <div><label>Interview date <span class="req">*</span></label><input name="interviewDate" type="date"></div>
+          <div><label>Interviewer assigned</label><input name="interviewerAssigned"></div>
+          <div><label>Source</label><select name="source"><option></option><option>Walk-in</option><option>Employee referral</option><option>Job portal</option><option>Consultant</option><option>Campus</option><option>Social media</option><option>Other</option></select></div>
+          <div><label>Referred by / consultant</label><input name="referredBy"></div>
+          <div class="full"><label>HR remarks</label><textarea name="hrRemarks"></textarea></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn-sec" id="add-cancel">Clear</button>
+          <button type="submit" class="btn" id="add-submit">Save candidate</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ PHASE 2 ============ -->
+  <section id="tab-feedback">
+    <div class="card">
+      <h2 id="fb-title">Phase 2 · Interview feedback</h2>
+      <p class="muted small">Filled by the interviewer. Each round is saved separately; the latest round decides the candidate's status.</p>
+      <div class="grid">
+        <div class="full"><label>Candidate <span class="req">*</span></label>
+          <select id="fb-cand"></select>
+          <label style="font-weight:400;margin-top:6px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="fb-showall" style="width:auto"> Show all candidates (not only pending / waiting / on hold)</label>
+        </div>
+      </div>
+      <div id="fb-summary"></div>
+      <form id="form-fb" autocomplete="off">
+        <div class="grid">
+          <div><label>Interviewer name <span class="req">*</span></label><input name="interviewer"></div>
+          <div><label>Interview date <span class="req">*</span></label><input name="date" type="date"></div>
+          <div><label>Round</label><select name="round"><option>HR</option><option>Technical</option><option>Practical / Trade test</option><option>Final / Management</option></select></div>
+          <div><label>Overall rating</label><select name="rating"><option value="">–</option><option value="5">5 · Excellent</option><option value="4">4 · Good</option><option value="3">3 · Average</option><option value="2">2 · Below average</option><option value="1">1 · Poor</option></select></div>
+          <div><label>Technical / job knowledge</label><select name="technical"><option value="">–</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
+          <div><label>Communication</label><select name="communication"><option value="">–</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
+          <div><label>Attitude</label><select name="attitude"><option value="">–</option><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select></div>
+          <div><label>Result <span class="req">*</span></label><select name="result" id="fb-result"><option value=""></option><option>Selected</option><option>Not Selected</option><option>Waiting</option><option>On Hold</option></select></div>
+          <div class="full"><label>Comments <span class="req">*</span></label><textarea name="comments" placeholder="Strengths, weaknesses, observations…"></textarea></div>
+        </div>
+        <div id="fb-selected-fields">
+          <h3>Offer details</h3>
+          <div class="grid">
+            <div><label>Offered salary (₹ per annum)</label><input name="offeredSalary" type="number" min="0"></div>
+            <div><label>Department finalised</label><select name="finalDepartment" class="dept-select"></select></div>
+            <div><label>Designation</label><input name="designation"></div>
+            <div><label>Expected joining date</label><input name="joiningDate" type="date"></div>
+          </div>
+        </div>
+        <div id="fb-reason-field" class="grid" style="margin-top:12px">
+          <div class="full"><label>Reason (not selected / waiting / hold)</label><input name="reason"></div>
+        </div>
+        <div class="actions">
+          <button type="button" class="btn-sec" id="fb-cancel">Clear</button>
+          <button type="submit" class="btn" id="fb-submit">Save feedback</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="tab-settings">
+    <div class="card">
+      <h2>Admin tools</h2>
+      <p class="muted small">Everything here needs the Admin password.</p>
+      <div class="grid">
+        <div class="full"><label>Departments (comma separated)</label><textarea id="set-depts" style="min-height:50px"></textarea></div>
+      </div>
+      <div class="actions" style="justify-content:flex-start">
+        <button class="btn-sec" id="btn-save-depts">Save departments</button>
+        <button class="btn-sec" id="btn-export">Export Excel (CSV)</button>
+        <button class="btn-sec" id="btn-backup">Download backup (readable JSON)</button>
+        <button class="btn-sec" id="btn-log">View activity log</button>
+      </div>
+      <h3>Passwords &amp; access</h3>
+      <div class="actions" style="justify-content:flex-start;margin-top:0">
+        <button class="btn-sec" id="btn-team-pw">Change team password</button>
+        <button class="btn-sec" id="btn-admin-pw">Change admin password</button>
+        <button class="btn-sec" id="btn-token">Replace GitHub token</button>
+      </div>
+      <p class="muted small">Change the team password when someone leaves the HR team. Everyone else will have to log in again with the new password.</p>
+    </div>
+    <div class="card">
+      <h2>Where the data lives</h2>
+      <div class="kv" id="repo-info"></div>
+    </div>
+  </section>
+</main>
+</div><!-- /#app -->
+
+<div id="modal"><div class="box" id="modal-box"></div></div>
+<div id="busy"><span id="busy-text">Saving…</span></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   Interview Tracker — single-file app. Data is stored ENCRYPTED (AES-256-GCM,
+   key derived from the team password) in a public GitHub repository, on the
+   'data' branch, and read/written through the GitHub API.
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STATUSES = ['Pending Interview', 'Selected', 'Not Selected', 'Waiting', 'On Hold'];
+const PW_SALT = 'interview-tracker:v1:';
+const LS_NAME = 'itrk_name_v2', LS_REPO = 'itrk_repo_v2';
+const IDLE_MINUTES = 30;
+const DEFAULT_DEPTS = ['Production','Quality','Maintenance','Stores','Purchase','Sales & Marketing','Accounts','HR & Admin','IT','Dispatch'];
+
+let DB = null;                       // latest data loaded
+let connected = false;
+const unlocked = { admin: false };
+let editId = null;                   // phase-1 record being edited
+let fbEdit = null;                   // {id, idx} feedback round being edited
+
+/* ---------------- small helpers ---------------- */
+const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+const today = () => new Date().toISOString().slice(0, 10);
+const nowIso = () => new Date().toISOString();
+const fmtDate = d => { if (!d) return ''; const x = new Date(d.length === 10 ? d + 'T00:00:00' : d); return isNaN(x) ? d : x.toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'}); };
+const fmtDT = d => { if (!d) return ''; const x = new Date(d); return isNaN(x) ? d : x.toLocaleString('en-IN', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}); };
+const money = n => (n === '' || n == null || isNaN(n)) ? '' : '₹' + Number(n).toLocaleString('en-IN');
+const digits = s => String(s || '').replace(/\D/g, '');
+const fmtAadhaar = a => a ? a.replace(/(\d{4})(\d{4})(\d{4})/, '$1 $2 $3') : '';
+const maskAadhaar = a => a ? 'XXXX XXXX ' + a.slice(-4) : '';
+const stars = n => n ? '<span class="stars">' + '★'.repeat(n) + '☆'.repeat(5 - n) + '</span>' : '–';
+function monthsAgo(d) { if (!d) return ''; const m = Math.round((Date.now() - new Date(d + 'T00:00:00')) / (30.44 * 864e5)); if (m < 1) return 'this month'; if (m < 12) return m + ' month' + (m > 1 ? 's' : '') + ' ago'; const y = (m / 12).toFixed(1).replace('.0', ''); return y + ' year' + (y === '1' ? '' : 's') + ' ago'; }
+function badge(status) { const cls = 'b-' + String(status || 'Pending').split(' ')[0]; return `<span class="badge ${cls}">${esc(status || 'Pending Interview')}</span>`; }
+function toast(msg, isErr) { const t = $('#toast'); t.textContent = msg; t.className = 'show' + (isErr ? ' err' : ''); clearTimeout(t._h); t._h = setTimeout(() => t.className = '', isErr ? 6000 : 3000); }
+function busy(on, text) { $('#busy-text').textContent = text || 'Saving…'; $('#busy').classList.toggle('open', !!on); }
+
+/* ---------------- Aadhaar validation (Verhoeff checksum) ---------------- */
+const VD = [[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+const VP = [[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+function aadhaarError(a) {
+  if (!a) return 'Aadhaar number is required';
+  if (a.length !== 12) return 'Aadhaar must be 12 digits';
+  if (/^[01]/.test(a)) return 'Aadhaar cannot start with 0 or 1';
+  let c = 0; const r = a.split('').reverse().map(Number);
+  for (let i = 0; i < r.length; i++) c = VD[c][VP[i % 8][r[i]]];
+  return c === 0 ? '' : 'Invalid Aadhaar number (checksum failed) – please re-check for a typo';
+}
+
+/* ---------------- data model ---------------- */
+function emptyDB() { return { app: 'interview-tracker', version: 2, settings: { adminPwHash: '', departments: DEFAULT_DEPTS.slice() }, lastRef: 0, candidates: [], log: [] }; }
+function normalize(d) {
+  const e = emptyDB();
+  d.settings = Object.assign(e.settings, d.settings || {});
+  d.candidates = Array.isArray(d.candidates) ? d.candidates : [];
+  d.log = Array.isArray(d.log) ? d.log : [];
+  d.lastRef = d.lastRef || 0;
+  d.candidates.forEach(c => { c.feedback = Array.isArray(c.feedback) ? c.feedback : []; c.status = c.feedback.length ? c.feedback[c.feedback.length - 1].result : 'Pending Interview'; });
+  return d;
+}
+
+/* ---------------- encoding helpers ---------------- */
+const TE = new TextEncoder(), TD = new TextDecoder();
+function bytesToB64(u) { let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+function b64ToBytes(b) { const s = atob(String(b).replace(/\s/g, '')); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+const b64enc = str => bytesToB64(TE.encode(str));
+const b64dec = b64 => TD.decode(b64ToBytes(b64));
+
+/* ---------------- encryption (AES-256-GCM, key from team password via PBKDF2) ---------------- */
+const KDF_ITER = 600000;
+const keyCache = new Map();
+async function sha256hex(str) { const buf = await crypto.subtle.digest('SHA-256', TE.encode(str)); return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join(''); }
+const pwHash = pw => sha256hex(PW_SALT + pw);
+async function deriveKey(pw, salt, iter) {
+  const id = iter + '|' + salt + '|' + pw;
+  if (!keyCache.has(id)) {
+    const base = await crypto.subtle.importKey('raw', TE.encode(pw), 'PBKDF2', false, ['deriveKey']);
+    keyCache.set(id, await crypto.subtle.deriveKey({ name: 'PBKDF2', salt: b64ToBytes(salt), iterations: iter, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']));
+  }
+  return keyCache.get(id);
+}
+async function seal(text, pw, salt) {
+  salt = salt || bytesToB64(crypto.getRandomValues(new Uint8Array(16)));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(pw, salt, KDF_ITER);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, TE.encode(text)));
+  return { app: 'interview-tracker', note: 'Encrypted. Open with the Interview Tracker app and the team password.', enc: 'AES-256-GCM', kdf: 'PBKDF2-SHA256', iter: KDF_ITER, salt, iv: bytesToB64(iv), ct: bytesToB64(ct) };
+}
+async function unseal(env, pw) {
+  if (!env || !env.ct) throw new Error('File is not in the encrypted format.');
+  const key = await deriveKey(pw, env.salt, env.iter || KDF_ITER);
+  try { return TD.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBytes(env.iv) }, key, b64ToBytes(env.ct))); }
+  catch (e) { const er = new Error('Wrong team password'); er.badPw = true; throw er; }
+}
+
+/* ---------------- session state (memory only — gone on reload / log out) ---------------- */
+const DATA_BRANCH = 'data', DATA_PATH = 'data/candidates.enc.json', CONFIG_PATH = 'config.json';
+const S = { owner: '', repo: '', mainBranch: 'main', token: '', pw: '', salt: '', user: '' };
+let CONFIG = null;   // contents of config.json (public; token inside is encrypted)
+
+function detectRepo() {
+  const h = location.hostname;
+  if (/\.github\.io$/i.test(h)) {
+    const owner = h.split('.')[0], seg = location.pathname.split('/').filter(Boolean)[0];
+    return { owner, repo: seg && !/\.html?$/i.test(seg) ? seg : h.toLowerCase() };
+  }
+  try { return JSON.parse(lsGet(LS_REPO) || 'null'); } catch (e) { return null; }
+}
+
+/* ---------------- GitHub API ---------------- */
+const api = p => `https://api.github.com/repos/${encodeURIComponent(S.owner)}/${encodeURIComponent(S.repo)}${p}`;
+const ghHeaders = (tok) => ({ 'Authorization': 'Bearer ' + (tok || S.token), 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' });
+const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+async function ghErr(r) {
+  let m = ''; try { m = (await r.json()).message || ''; } catch (e) {}
+  if (r.status === 401) { const e = new Error('The GitHub token has expired or was revoked. The admin must replace it (login screen → "Admin: replace expired GitHub token").'); e.tokenBad = true; return e; }
+  if (r.status === 403) return new Error('GitHub refused access (403): ' + m + '. Check the token has Contents: Read and write on this repository.');
+  if (r.status === 404) return new Error('Repository not found (404). Check the username / repository name and that the token was created for this repository.');
+  return new Error(`GitHub error ${r.status}: ${m}`);
+}
+async function ghGetFile(path, ref, tok) {
+  const r = await fetch(api('/contents/' + encPath(path)) + '?ref=' + encodeURIComponent(ref) + '&_=' + Date.now(), { headers: ghHeaders(tok), cache: 'no-store' });
+  if (r.status === 404) return null;
+  if (!r.ok) throw await ghErr(r);
+  const j = await r.json();
+  let text;
+  if (j.content && j.encoding === 'base64') text = b64dec(j.content);
+  else { // files > 1 MB
+    const b = await fetch(api('/git/blobs/' + j.sha), { headers: ghHeaders(tok), cache: 'no-store' });
+    if (!b.ok) throw await ghErr(b);
+    text = b64dec((await b.json()).content);
+  }
+  return { text, sha: j.sha };
+}
+async function ghPutFile(path, branch, text, sha, msg, tok) {
+  const body = { message: msg, content: b64enc(text), branch };
+  if (sha) body.sha = sha;
+  const r = await fetch(api('/contents/' + encPath(path)), { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders(tok)), body: JSON.stringify(body) });
+  if (r.status === 409 || r.status === 422) { const e = new Error('conflict'); e.conflict = true; throw e; }
+  if (!r.ok) throw await ghErr(r);
+  return (await r.json()).content.sha;
+}
+
+/* ---------------- config.json (public file on the main branch) ---------------- */
+async function fetchConfig(where) {
+  if (/^https?:$/.test(location.protocol)) {
+    try { const r = await fetch(CONFIG_PATH + '?_=' + Date.now(), { cache: 'no-store' }); if (r.ok) { const j = await r.json(); if (j.app === 'interview-tracker') return j; } } catch (e) {}
+  }
+  if (where && where.owner && where.repo) {
+    try { const r = await fetch(`https://raw.githubusercontent.com/${encodeURIComponent(where.owner)}/${encodeURIComponent(where.repo)}/HEAD/${CONFIG_PATH}?_=${Date.now()}`, { cache: 'no-store' }); if (r.ok) { const j = await r.json(); if (j.app === 'interview-tracker') return j; } } catch (e) {}
+  }
+  return null;
+}
+async function fetchConfigFresh(owner, repo, branch) {
+  try {
+    const r = await fetch(`https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${CONFIG_PATH}?ref=${encodeURIComponent(branch || 'main')}&_=${Date.now()}`, { headers: { 'Accept': 'application/vnd.github+json' }, cache: 'no-store' });
+    if (!r.ok) return null;
+    const j = JSON.parse(b64dec((await r.json()).content));
+    return j.app === 'interview-tracker' ? j : null;
+  } catch (e) { return null; }
+}
+async function writeConfig(token, pw, msg) {
+  const cfgObj = { app: 'interview-tracker', version: 2, owner: S.owner, repo: S.repo, mainBranch: S.mainBranch, dataBranch: DATA_BRANCH, dataPath: DATA_PATH, token: await seal(token, pw) };
+  for (let i = 0; i < 4; i++) {
+    const cur = await ghGetFile(CONFIG_PATH, S.mainBranch, token);
+    try { await ghPutFile(CONFIG_PATH, S.mainBranch, JSON.stringify(cfgObj, null, 2) + '\n', cur && cur.sha, msg, token); CONFIG = cfgObj; return; }
+    catch (e) { if (!e.conflict) throw e; }
+  }
+  throw new Error('Could not save config.json – please try again.');
+}
+
+/* ---------------- data file (encrypted, on the "data" branch) ---------------- */
+async function storeLoad() {
+  const f = await ghGetFile(DATA_PATH, DATA_BRANCH);
+  if (!f) return { data: emptyDB(), sha: null };
+  const env = JSON.parse(f.text);
+  const data = JSON.parse(await unseal(env, S.pw));
+  S.salt = env.salt;
+  return { data, sha: f.sha };
+}
+async function storeSave(data, sha, msg) {
+  const env = await seal(JSON.stringify(data), S.pw, S.salt);
+  S.salt = env.salt;
+  return ghPutFile(DATA_PATH, DATA_BRANCH, JSON.stringify(env) + '\n', sha, `${msg} [by ${S.user}]`);
+}
+
+function handleFatal(e) {
+  if (e.badPw) { forceLogout('The team password was changed by the admin. Please log in with the new password.'); return true; }
+  if (e.tokenBad) { forceLogout(e.message); return true; }
+  return false;
+}
+
+/* Read-latest → apply change → write. Retries if someone else saved in between. */
+async function mutate(fn, msg) {
+  busy(true, 'Saving…');
+  try {
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { data, sha } = await storeLoad();
+      normalize(data);
+      const result = fn(data);              // may throw to abort
+      data.log.push({ at: nowIso(), by: S.user, action: msg });
+      if (data.log.length > 3000) data.log = data.log.slice(-3000);
+      normalize(data);
+      try {
+        await storeSave(data, sha, msg);
+        DB = data; setConnected(true); renderAll();
+        return result;
+      } catch (e) {
+        if (!e.conflict) throw e;
+        await new Promise(r => setTimeout(r, 400 + Math.random() * 800));
+      }
+    }
+    throw new Error('Another person is saving at the same moment. Please try again.');
+  } catch (e) { if (handleFatal(e)) { const x = new Error('Logged out'); x.silent = true; throw x; } throw e; }
+  finally { busy(false); }
+}
+
+async function refresh(quiet) {
+  if (!S.token) return;
+  if (!quiet) busy(true, 'Loading…');
+  try {
+    const { data } = await storeLoad();
+    DB = normalize(data); setConnected(true); renderAll();
+    if (!DB.settings.adminPwHash) firstRunSetup();
+  } catch (e) {
+    if (!handleFatal(e)) { setConnected(false, 'Error'); toast(e.message, true); }
+  } finally { busy(false); }
+}
+function setConnected(ok, label) {
+  connected = ok;
+  $('#conn-status').innerHTML = ok ? `<span class="dot on"></span>${esc(S.owner + '/' + S.repo)} · ${esc(S.user)}` : `<span class="dot err"></span>${esc(label || 'Not connected')}`;
+  renderLock();
+}
+function renderLock() { $('#lock-status').textContent = unlocked.admin ? 'Admin unlocked' : ''; }
+
+/* ---------------- gate screens: login / setup / token repair ---------------- */
+function showGate(which, msg) {
+  $('#app').hidden = true; $('#gate').hidden = false;
+  ['loading', 'login', 'setup', 'fix', 'where'].forEach(n => $('#gate-' + n).hidden = n !== which);
+  $('#gate-card').classList.toggle('wide', which === 'setup');
+  const errEl = { login: '#g-err', setup: '#s-err', fix: '#f-err', where: '#w-err' }[which];
+  if (errEl) $(errEl).textContent = msg || '';
+  const f = $('#gate-' + which + ' input'); if (f) setTimeout(() => (which === 'login' && $('#g-name').value ? $('#g-pw') : f).focus(), 30);
+}
+function enterApp() {
+  lsSet(LS_NAME, S.user);
+  $('#gate').hidden = true; $('#app').hidden = false;
+  $('#repo-info').innerHTML = `<div><b>Repository</b><a href="https://github.com/${esc(S.owner)}/${esc(S.repo)}" target="_blank" rel="noopener">${esc(S.owner)}/${esc(S.repo)}</a></div>
+    <div><b>Encrypted data file</b><a href="https://github.com/${esc(S.owner)}/${esc(S.repo)}/blob/${DATA_BRANCH}/${DATA_PATH}" target="_blank" rel="noopener">${DATA_BRANCH} branch · ${DATA_PATH}</a></div>
+    <div><b>Change history</b><a href="https://github.com/${esc(S.owner)}/${esc(S.repo)}/commits/${DATA_BRANCH}" target="_blank" rel="noopener">All saves (commits)</a></div>`;
+  resetAddForm(); resetFbForm(); switchTab('list');
+}
+function forceLogout(msg) {
+  S.pw = S.token = S.salt = ''; DB = null; keyCache.clear(); unlocked.admin = false; connected = false;
+  closeModal(true); busy(false);
+  $('#g-pw').value = '';
+  showGate('login', msg);
+}
+function checkPw(pw, min, label) { if (!pw || pw.length < min) return `${label} must be at least ${min} characters.`; return ''; }
+
+async function doLogin(e) {
+  e && e.preventDefault();
+  const name = $('#g-name').value.trim(), pw = $('#g-pw').value;
+  if (!name) return $('#g-err').textContent = 'Please enter your name.';
+  if (!pw) return $('#g-err').textContent = 'Please enter the team password.';
+  busy(true, 'Unlocking…');
+  const attempt = async () => {
+    const token = await unseal(CONFIG.token, pw);
+    Object.assign(S, { owner: CONFIG.owner, repo: CONFIG.repo, mainBranch: CONFIG.mainBranch || 'main', token, pw, user: name });
+    return storeLoad();
+  };
+  try {
+    let loaded;
+    try { loaded = await attempt(); }
+    catch (err) {
+      // The GitHub Pages copy of config.json can lag a few minutes after the admin changes the
+      // team password or token — fetch the latest copy straight from the repository and retry once.
+      if (!err.badPw && !err.tokenBad) throw err;
+      const fresh = await fetchConfigFresh(CONFIG.owner, CONFIG.repo, CONFIG.mainBranch);
+      if (!fresh || JSON.stringify(fresh.token) === JSON.stringify(CONFIG.token)) throw err;
+      CONFIG = fresh; keyCache.clear(); loaded = await attempt();
+    }
+    DB = normalize(loaded.data); setConnected(true); enterApp(); renderAll();
+    if (!DB.settings.adminPwHash) firstRunSetup();
+  } catch (err) {
+    S.pw = S.token = ''; keyCache.clear();
+    $('#g-err').textContent = err.message; $('#g-pw').select();
+  } finally { busy(false); }
+}
+
+async function ensureDataBranch(tok) {
+  const r = await fetch(api('/git/ref/heads/' + DATA_BRANCH) + '?_=' + Date.now(), { headers: ghHeaders(tok), cache: 'no-store' });
+  if (r.ok) return;
+  if (r.status !== 404) throw await ghErr(r);
+  const m = await fetch(api('/git/ref/heads/' + encodeURIComponent(S.mainBranch)), { headers: ghHeaders(tok), cache: 'no-store' });
+  if (!m.ok) throw new Error('The repository looks empty. Upload index.html to it first, then run setup again.');
+  const sha = (await m.json()).object.sha;
+  const c = await fetch(api('/git/refs'), { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, ghHeaders(tok)), body: JSON.stringify({ ref: 'refs/heads/' + DATA_BRANCH, sha }) });
+  if (!c.ok && c.status !== 422) throw await ghErr(c);
+}
+
+async function doSetup(e) {
+  e.preventDefault();
+  const v = formVals($('#setup-form')), err = t => $('#s-err').textContent = t;
+  if (!v.owner || !v.repo || !v.token) return err('GitHub username, repository and token are required.');
+  const p = checkPw(v.teamPw, 10, 'Team password') || checkPw(v.adminPw, 8, 'Admin password'); if (p) return err(p);
+  if (v.teamPw !== v.teamPw2) return err('Team passwords do not match.');
+  if (v.adminPw !== v.adminPw2) return err('Admin passwords do not match.');
+  if (v.teamPw === v.adminPw) return err('Team and admin passwords must be different.');
+  if (!v.user) return err('Please enter your name.');
+  busy(true, 'Setting up…');
+  try {
+    Object.assign(S, { owner: v.owner, repo: v.repo, user: v.user });
+    const r = await fetch(api('') + '?_=' + Date.now(), { headers: ghHeaders(v.token), cache: 'no-store' });
+    if (!r.ok) throw await ghErr(r);
+    S.mainBranch = (await r.json()).default_branch || 'main';
+    await ensureDataBranch(v.token);
+    S.token = v.token; S.pw = v.teamPw; S.salt = '';
+    const existing = await ghGetFile(DATA_PATH, DATA_BRANCH);
+    if (existing) {
+      // Data already exists (e.g. config.json was lost): must open with the same passwords
+      let data;
+      try { data = normalize(JSON.parse(await unseal(JSON.parse(existing.text), v.teamPw))); }
+      catch (x) { throw new Error('Existing interview data was found but cannot be opened with this team password. Use the original team password.'); }
+      if (data.settings.adminPwHash && data.settings.adminPwHash !== await pwHash(v.adminPw)) throw new Error('Existing data was found, but the admin password does not match it.');
+      DB = data;
+    } else {
+      const data = emptyDB();
+      data.settings.adminPwHash = await pwHash(v.adminPw);
+      data.log.push({ at: nowIso(), by: S.user, action: 'Initial setup' });
+      await storeSave(data, null, 'Initial setup');
+      DB = normalize(data);
+    }
+    await writeConfig(v.token, v.teamPw, `Interview Tracker setup [by ${S.user}]`);
+    lsSet(LS_REPO, JSON.stringify({ owner: S.owner, repo: S.repo }));
+    unlocked.admin = true;
+    setConnected(true); enterApp(); renderAll();
+    toast('Setup complete. Share the app link and team password with your HR team.');
+  } catch (x) { S.token = S.pw = ''; err(x.message); }
+  finally { busy(false); }
+}
+
+async function doFixToken(e) {
+  e.preventDefault();
+  const v = formVals($('#fix-form')), err = t => $('#f-err').textContent = t;
+  if (!v.teamPw || !v.adminPw || !v.token || !v.user) return err('All fields are required.');
+  busy(true, 'Checking…');
+  try {
+    Object.assign(S, { owner: CONFIG.owner, repo: CONFIG.repo, mainBranch: CONFIG.mainBranch || 'main', user: v.user });
+    // Test the new token first, then read the data with it and verify both passwords
+    const r = await fetch(api('') + '?_=' + Date.now(), { headers: ghHeaders(v.token), cache: 'no-store' });
+    if (!r.ok) throw await ghErr(r);
+    const f = await ghGetFile(DATA_PATH, DATA_BRANCH, v.token);
+    if (!f) throw new Error('Data file not found in the repository.');
+    const data = normalize(JSON.parse(await unseal(JSON.parse(f.text), v.teamPw)));
+    if (data.settings.adminPwHash !== await pwHash(v.adminPw)) throw new Error('Wrong admin password.');
+    await writeConfig(v.token, v.teamPw, `Replace GitHub token [by ${v.user}]`);
+    Object.assign(S, { token: v.token, pw: v.teamPw });
+    DB = data; unlocked.admin = true;
+    $('#fix-form').reset();
+    setConnected(true); enterApp(); renderAll();
+    toast('New token saved. Everyone can log in again.');
+  } catch (x) { S.token = S.pw = ''; err(x.message); }
+  finally { busy(false); }
+}
+
+async function startGate() {
+  $('#g-name').value = lsGet(LS_NAME) || '';
+  if (!(window.crypto && crypto.subtle)) { $('#gate-loading').innerHTML = '<h1>Interview Tracker</h1><div class="alert err">This browser cannot run the encryption. Open the app from its https://…github.io link in Chrome, Edge or Firefox.</div>'; return; }
+  const where = detectRepo();
+  CONFIG = await fetchConfig(where);
+  if (CONFIG) return showGate('login');
+  if (!/\.github\.io$/i.test(location.hostname) && !(where && where.owner)) return showGate('where');
+  // No config.json yet → first-time setup
+  const f = $('#setup-form');
+  if (where) { f.owner.value = where.owner || ''; f.repo.value = where.repo || ''; }
+  f.user.value = lsGet(LS_NAME) || '';
+  showGate('setup');
+}
+$('#login-form').addEventListener('submit', doLogin);
+$('#setup-form').addEventListener('submit', doSetup);
+$('#fix-form').addEventListener('submit', doFixToken);
+$('#g-fix').onclick = () => { $('#fix-form').user.value = $('#g-name').value; showGate('fix'); };
+$('#f-back').onclick = () => showGate('login');
+$('#where-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const v = formVals($('#where-form'));
+  if (!v.owner || !v.repo) return $('#w-err').textContent = 'Both fields are required.';
+  lsSet(LS_REPO, JSON.stringify({ owner: v.owner, repo: v.repo }));
+  showGate('loading'); startGate();
+});
+
+/* ---------------- modal + password prompts ---------------- */
+let modalOnClose = null;
+function openModal(html, wide, onClose) { const b = $('#modal-box'); b.className = 'box' + (wide ? ' wide' : ''); b.innerHTML = html; delete b.dataset.locked; $('#modal').classList.add('open'); modalOnClose = onClose || null; const f = b.querySelector('input,select,textarea'); if (f) setTimeout(() => f.focus(), 30); }
+function closeModal(silent) { $('#modal').classList.remove('open'); const cb = modalOnClose; modalOnClose = null; if (cb && !silent) cb(); }
+$('#modal').addEventListener('mousedown', e => { if (e.target.id === 'modal' && !$('#modal-box').dataset.locked) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal').classList.contains('open') && !$('#modal-box').dataset.locked) closeModal(); });
+
+function confirmBox(title, html, okLabel, danger) {
+  return new Promise(res => {
+    openModal(`<h3>${esc(title)}</h3><div>${html}</div><div class="actions"><button class="btn-sec" id="cf-no">Cancel</button><button class="${danger ? 'btn-danger' : 'btn'}" id="cf-yes">${esc(okLabel || 'OK')}</button></div>`, false, () => res(false));
+    $('#cf-no').onclick = () => closeModal();
+    $('#cf-yes').onclick = () => { closeModal(true); res(true); };
+  });
+}
+/* Everyone logged in has the team password, so 'entry' actions are always allowed.
+   'admin' actions (edit, delete, export, settings) need the admin password once per login. */
+function askPassword(level) {
+  if (level !== 'admin' || unlocked.admin) return Promise.resolve(true);
+  return new Promise(res => {
+    openModal(`<h3>Admin password required</h3><p class="muted small">Editing, deleting, exporting and admin settings are protected by the Admin password.</p><input type="password" id="pw-in" autocomplete="off" placeholder="Admin password"><div class="err-text" id="pw-err"></div><div class="actions"><button class="btn-sec" id="pw-no">Cancel</button><button class="btn" id="pw-ok">Unlock</button></div>`, false, () => res(false));
+    const go = async () => {
+      if (await pwHash($('#pw-in').value) === DB.settings.adminPwHash) { unlocked.admin = true; renderLock(); closeModal(true); res(true); }
+      else { $('#pw-err').textContent = 'Wrong password'; $('#pw-in').select(); }
+    };
+    $('#pw-ok').onclick = go; $('#pw-in').onkeydown = e => { if (e.key === 'Enter') go(); };
+    $('#pw-no').onclick = () => closeModal();
+  });
+}
+function newPasswordModal(title, intro, min, locked) {
+  return new Promise(res => {
+    openModal(`<h3>${esc(title)}</h3><p class="muted small">${intro}</p>
+      <label>New password (min ${min} characters)</label><input type="password" id="np-1" autocomplete="new-password">
+      <label style="margin-top:10px">Repeat new password</label><input type="password" id="np-2" autocomplete="new-password">
+      <div class="err-text" id="np-err"></div>
+      <div class="actions">${locked ? '' : '<button class="btn-sec" id="np-no">Cancel</button>'}<button class="btn" id="np-ok">Save</button></div>`, false, () => res(null));
+    if (locked) $('#modal-box').dataset.locked = '1';
+    if ($('#np-no')) $('#np-no').onclick = () => closeModal();
+    $('#np-ok').onclick = () => {
+      const a = $('#np-1').value, b = $('#np-2').value;
+      const p = checkPw(a, min, 'Password'); if (p) return $('#np-err').textContent = p;
+      if (a !== b) return $('#np-err').textContent = 'Passwords do not match.';
+      if (a === S.pw) return $('#np-err').textContent = 'Must be different from the current team password.';
+      closeModal(true); res(a);
+    };
+  });
+}
+async function firstRunSetup() {
+  const a = await newPasswordModal('Create the admin password', 'No admin password exists in the data yet. Choose one now (needed for editing, deleting and exporting).', 8, true);
+  if (!a) return;
+  try {
+    const h = await pwHash(a);
+    await mutate(d => { if (d.settings.adminPwHash) throw new Error('An admin password was already set by someone else.'); d.settings.adminPwHash = h; }, 'Set admin password');
+    unlocked.admin = true; renderLock(); toast('Admin password saved.');
+  } catch (e) { if (!e.silent) { toast(e.message, true); refresh(true); } }
+}
+
+/* ---------------- tabs ---------------- */
+function switchTab(name) {
+  $$('nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('main section').forEach(s => s.classList.toggle('active', s.id === 'tab-' + name));
+  if (name === 'feedback') renderFbSelect();
+}
+$$('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+
+/* ---------------- rendering ---------------- */
+function repeatInfo() {
+  const map = {};
+  DB.candidates.forEach(c => (map[c.aadhaar] = map[c.aadhaar] || []).push(c));
+  Object.values(map).forEach(list => list.sort((a, b) => (a.interviewDate || '').localeCompare(b.interviewDate || '') || (a.createdAt || '').localeCompare(b.createdAt || '')));
+  return map;
+}
+function renderAll() {
+  if (!DB) return;
+  const depts = DB.settings.departments;
+  $$('.dept-select').forEach(s => { const v = s.value; s.innerHTML = '<option value=""></option>' + depts.map(d => `<option>${esc(d)}</option>`).join(''); if (v && !depts.includes(v)) s.insertAdjacentHTML('beforeend', `<option>${esc(v)}</option>`); s.value = v; });
+  const fd = $('#f-dept'), fv = fd.value; fd.innerHTML = '<option value="">All departments</option>' + depts.map(d => `<option>${esc(d)}</option>`).join(''); fd.value = fv;
+  $('#set-depts').value = depts.join(', ');
+  renderStats(); renderList(); renderFbSelect();
+}
+function renderStats() {
+  const c = DB.candidates, rep = repeatInfo();
+  const cnt = s => c.filter(x => x.status === s).length;
+  const repeats = Object.values(rep).filter(l => l.length > 1).length;
+  const items = [['Total interviews', c.length, ''], ['Unique candidates', Object.keys(rep).length, ''], ['Pending', cnt('Pending Interview'), 'Pending Interview'], ['Selected', cnt('Selected'), 'Selected'], ['Not selected', cnt('Not Selected'), 'Not Selected'], ['Waiting', cnt('Waiting'), 'Waiting'], ['On hold', cnt('On Hold'), 'On Hold'], ['Repeat candidates', repeats, 'rep']];
+  $('#stats').innerHTML = items.map(([l, n, f]) => `<div class="stat" data-f="${esc(f)}"><b>${n}</b><span>${l}</span></div>`).join('');
+  $$('#stats .stat').forEach(el => el.onclick = () => {
+    const f = el.dataset.f; $('#f-repeat').value = f === 'rep' ? 'rep' : ''; $('#f-status').value = f !== 'rep' ? f : ''; renderList();
+  });
+}
+function renderList() {
+  const q = $('#f-search').value.trim().toLowerCase(), qd = digits(q);
+  const st = $('#f-status').value, dp = $('#f-dept').value, rp = $('#f-repeat').value;
+  const rep = repeatInfo();
+  const rows = DB.candidates.filter(c => {
+    if (st && c.status !== st) return false;
+    if (dp && c.department !== dp) return false;
+    if (rp && rep[c.aadhaar].length < 2) return false;
+    if (q) {
+      const hay = [c.name, c.position, c.department, c.email, c.refNo, c.interviewerAssigned, c.location].join(' ').toLowerCase();
+      if (!hay.includes(q) && !(qd.length >= 4 && (c.aadhaar.includes(qd) || digits(c.phone).includes(qd)))) return false;
+    }
+    return true;
+  }).sort((a, b) => (b.interviewDate || '').localeCompare(a.interviewDate || '') || (b.createdAt || '').localeCompare(a.createdAt || ''));
+  $('#tbody').innerHTML = rows.map(c => {
+    const list = rep[c.aadhaar], n = list.length, pos = list.indexOf(c) + 1;
+    const last = c.feedback[c.feedback.length - 1];
+    const offered = [...c.feedback].reverse().find(f => f.offeredSalary);
+    const repBadge = n > 1 ? `<span class="badge b-rep" title="Same Aadhaar interviewed ${n} times">Repeat · visit ${pos} of ${n}</span>` : '';
+    return `<tr class="${n > 1 ? 'repeat' : ''}">
+      <td class="small">${esc(c.refNo)}</td>
+      <td><b>${esc(c.name)}</b><div class="small muted">${esc(c.phone)}</div>${repBadge}</td>
+      <td class="small">${maskAadhaar(c.aadhaar)}</td>
+      <td>${esc(c.position)}<div class="small muted">${esc(c.department)}</div></td>
+      <td>${fmtDate(c.interviewDate)}<div class="small muted">${esc(last ? last.interviewer : c.interviewerAssigned || '')}</div></td>
+      <td>${badge(c.status)}${c.feedback.length ? `<div class="small muted">${c.feedback.length} round${c.feedback.length > 1 ? 's' : ''}</div>` : ''}</td>
+      <td class="small">${offered ? money(offered.offeredSalary) : ''}</td>
+      <td style="white-space:nowrap"><button class="link" data-act="view" data-id="${c.id}">View</button><button class="link" data-act="fb" data-id="${c.id}">Feedback</button><button class="link" data-act="edit" data-id="${c.id}">Edit</button><button class="link danger" data-act="del" data-id="${c.id}">Delete</button></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="8" class="muted" style="text-align:center;padding:30px">${DB.candidates.length ? 'No candidates match the filters.' : 'No candidates yet. Start with “Phase 1 · HR Entry”.'}</td></tr>`;
+  $('#list-foot').textContent = `Showing ${rows.length} of ${DB.candidates.length} records. Rows with an orange edge are repeat candidates (same Aadhaar interviewed more than once).`;
+}
+$('#f-status').innerHTML += STATUSES.map(s => `<option>${s}</option>`).join('');
+['#f-search', '#f-status', '#f-dept', '#f-repeat'].forEach(s => $(s).addEventListener('input', () => DB && renderList()));
+
+$('#tbody').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]'); if (!b) return;
+  const id = b.dataset.id, act = b.dataset.act;
+  if (act === 'view') viewCandidate(id);
+  if (act === 'fb') { fbEdit = null; resetFbForm(); $('#fb-showall').checked = true; switchTab('feedback'); $('#fb-cand').value = id; onFbCandChange(); }
+  if (act === 'edit') startEdit(id);
+  if (act === 'del') deleteCandidate(id);
+});
+
+/* ---------------- view candidate ---------------- */
+function roundHtml(f, id, idx) {
+  return `<div class="round"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+    <div><b>${esc(f.round || 'Round')}</b> · ${fmtDate(f.date)} · ${esc(f.interviewer)} ${badge(f.result)}</div>
+    ${id ? `<div><button class="link" data-rnd-edit="${idx}">Edit</button><button class="link danger" data-rnd-del="${idx}">Delete</button></div>` : ''}</div>
+    <div class="small" style="margin:4px 0">Overall ${stars(+f.rating)} &nbsp; Technical ${f.technical || '–'} · Communication ${f.communication || '–'} · Attitude ${f.attitude || '–'}</div>
+    <div style="white-space:pre-wrap">${esc(f.comments)}</div>
+    ${f.reason ? `<div class="small muted">Reason: ${esc(f.reason)}</div>` : ''}
+    ${f.offeredSalary || f.finalDepartment || f.designation || f.joiningDate ? `<div class="small" style="margin-top:4px"><b>Offer:</b> ${money(f.offeredSalary)} ${f.designation ? '· ' + esc(f.designation) : ''} ${f.finalDepartment ? '· ' + esc(f.finalDepartment) : ''} ${f.joiningDate ? '· Joining ' + fmtDate(f.joiningDate) : ''}</div>` : ''}
+    <div class="small muted">Saved by ${esc(f.updatedBy || f.createdBy || '')} ${fmtDT(f.updatedAt || f.createdAt)}</div></div>`;
+}
+function viewCandidate(id) {
+  const c = DB.candidates.find(x => x.id === id); if (!c) return;
+  const others = repeatInfo()[c.aadhaar].filter(x => x.id !== id);
+  const kv = [['Ref no', c.refNo], ['Aadhaar', `<span id="aad-val">${maskAadhaar(c.aadhaar)}</span> <button class="link" id="aad-show">Show</button>`, true], ['Mobile', c.phone], ['Email', c.email], ['Date of birth', fmtDate(c.dob)], ['Gender', c.gender], ['Qualification', c.qualification], ['Experience', c.experience ? c.experience + ' yrs' : ''], ['Current company', c.currentCompany], ['Location', c.location], ['Current CTC', money(c.currentCTC)], ['Expected CTC', money(c.expectedCTC)], ['Notice period', c.noticePeriod ? c.noticePeriod + ' days' : ''], ['Position', c.position], ['Department', c.department], ['Interview date', fmtDate(c.interviewDate)], ['Interviewer assigned', c.interviewerAssigned], ['Source', [c.source, c.referredBy].filter(Boolean).join(' – ')], ['Resume', c.resumeLink ? `<a href="${esc(c.resumeLink)}" target="_blank" rel="noopener">Open</a>` : '', true], ['Entered by', `${esc(c.createdBy)} · ${fmtDT(c.createdAt)}`, true]];
+  openModal(`<div style="display:flex;justify-content:space-between;align-items:start;gap:10px"><h3>${esc(c.name)} ${badge(c.status)}</h3><button class="btn-sec" id="v-close">Close</button></div>
+    ${others.length ? `<div class="alert warn"><b>Repeat candidate</b> – this Aadhaar has ${others.length} other interview record${others.length > 1 ? 's' : ''} (see history below).</div>` : ''}
+    <div class="kv">${kv.filter(k => k[1]).map(([k, v, raw]) => `<div><b>${k}</b>${raw ? v : esc(v)}</div>`).join('')}</div>
+    ${c.hrRemarks ? `<h3 style="color:var(--pri);font-size:14px;margin:14px 0 4px">HR remarks</h3><div style="white-space:pre-wrap">${esc(c.hrRemarks)}</div>` : ''}
+    <h3 style="color:var(--pri);font-size:14px;margin:14px 0 4px">Interview feedback (${c.feedback.length})</h3>
+    <div id="v-rounds">${c.feedback.map((f, i) => roundHtml(f, id, i)).join('') || '<p class="muted">No feedback yet.</p>'}</div>
+    ${others.length ? `<h3 style="color:var(--rep);font-size:14px;margin:14px 0 4px">Earlier / other interviews of this Aadhaar</h3>${others.map(o => `<div class="round"><b>${fmtDate(o.interviewDate)}</b> (${monthsAgo(o.interviewDate)}) · ${esc(o.position)} · ${esc(o.department)} ${badge(o.status)} <button class="link" data-view="${o.id}">Open</button>${o.feedback.length ? `<div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(o.feedback[o.feedback.length - 1].comments)}</div>` : ''}</div>`).join('')}` : ''}
+    <div class="actions"><button class="btn-sec" data-go="fb">Add feedback</button><button class="btn-sec" data-go="edit">Edit details</button></div>`, true);
+  $('#v-close').onclick = () => closeModal();
+  $('#aad-show').onclick = () => { $('#aad-val').textContent = fmtAadhaar(c.aadhaar); $('#aad-show').remove(); };
+  $$('[data-view]').forEach(b => b.onclick = () => viewCandidate(b.dataset.view));
+  $$('[data-rnd-edit]').forEach(b => b.onclick = () => startFbEdit(id, +b.dataset.rndEdit));
+  $$('[data-rnd-del]').forEach(b => b.onclick = () => deleteRound(id, +b.dataset.rndDel));
+  $('[data-go="fb"]').onclick = () => { closeModal(true); fbEdit = null; resetFbForm(); $('#fb-showall').checked = true; switchTab('feedback'); $('#fb-cand').value = id; onFbCandChange(); };
+  $('[data-go="edit"]').onclick = () => { closeModal(true); startEdit(id); };
+}
+
+/* ---------------- Phase 1: add / edit ---------------- */
+const formAdd = $('#form-add');
+const formVals = f => Object.fromEntries([...new FormData(f).entries()].map(([k, v]) => [k, String(v).trim()]));
+function setFormVals(f, obj) { [...f.elements].forEach(el => { if (el.name && obj[el.name] != null) { if (el.tagName === 'SELECT' && obj[el.name] && ![...el.options].some(o => o.value === obj[el.name])) el.insertAdjacentHTML('beforeend', `<option>${esc(obj[el.name])}</option>`); el.value = obj[el.name]; } }); }
+
+$('#in-aadhaar').addEventListener('input', e => {
+  const d = digits(e.target.value).slice(0, 12);
+  e.target.value = d.replace(/(\d{4})(?=\d)/g, '$1 ');
+  checkAadhaar();
+});
+function checkAadhaar() {
+  const a = digits($('#in-aadhaar').value), msg = $('#aadhaar-msg'), box = $('#dup-box');
+  box.innerHTML = '';
+  if (a.length < 12) { msg.textContent = a.length ? `${a.length}/12 digits` : ''; msg.className = 'muted small'; return; }
+  const err = aadhaarError(a); msg.className = err ? 'err-text' : 'ok-text'; msg.textContent = err || 'Valid Aadhaar format';
+  if (err || !DB) return;
+  const prev = DB.candidates.filter(c => c.aadhaar === a && c.id !== editId).sort((x, y) => (y.interviewDate || '').localeCompare(x.interviewDate || ''));
+  if (!prev.length) return;
+  const p0 = prev[0];
+  box.innerHTML = `<div class="alert warn"><b>Repeat candidate:</b> this Aadhaar was interviewed ${prev.length} time${prev.length > 1 ? 's' : ''} before.
+    <ul>${prev.map(p => `<li><b>${fmtDate(p.interviewDate)}</b> (${monthsAgo(p.interviewDate)}) – ${esc(p.name)}, ${esc(p.position)} / ${esc(p.department)} – ${badge(p.status)}${p.feedback.length ? ' – “' + esc(p.feedback[p.feedback.length - 1].comments.slice(0, 140)) + '”' : ''} <button type="button" class="link" data-view="${p.id}">View</button></li>`).join('')}</ul>
+    ${!editId ? '<button type="button" class="link" id="dup-fill">Copy personal details from the last record</button>' : ''}</div>`;
+  $$('#dup-box [data-view]').forEach(b => b.onclick = () => viewCandidate(b.dataset.view));
+  if ($('#dup-fill')) $('#dup-fill').onclick = () => { const keep = ['name','phone','email','dob','gender','qualification','experience','currentCompany','location','currentCTC','expectedCTC','noticePeriod','resumeLink']; const o = {}; keep.forEach(k => o[k] = p0[k] || ''); setFormVals(formAdd, o); };
+}
+
+function resetAddForm() {
+  formAdd.reset(); editId = null; $('#dup-box').innerHTML = ''; $('#aadhaar-msg').textContent = '';
+  $('#add-title').textContent = 'Phase 1 · Candidate details (HR)'; $('#add-submit').textContent = 'Save candidate';
+  formAdd.interviewDate.value = today();
+}
+$('#add-cancel').onclick = resetAddForm;
+
+async function startEdit(id) {
+  if (!await askPassword('admin')) return;
+  const c = DB.candidates.find(x => x.id === id); if (!c) return;
+  resetAddForm(); editId = id;
+  setFormVals(formAdd, Object.assign({}, c, { aadhaar: fmtAadhaar(c.aadhaar) }));
+  $('#add-title').textContent = `Editing ${c.refNo} · ${c.name}`; $('#add-submit').textContent = 'Save changes';
+  switchTab('add'); checkAadhaar(); window.scrollTo(0, 0);
+}
+
+formAdd.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!connected) return toast('Not connected – press Refresh.', true);
+  const v = formVals(formAdd); v.aadhaar = digits(v.aadhaar); v.phone = v.phone.replace(/[^\d+]/g, '');
+  const problems = [];
+  const ae = aadhaarError(v.aadhaar); if (ae) problems.push(ae);
+  if (!v.name) problems.push('Full name is required');
+  if (digits(v.phone).length < 10) problems.push('Mobile number must have at least 10 digits');
+  if (!v.position) problems.push('Position is required');
+  if (!v.department) problems.push('Department is required');
+  if (!v.interviewDate) problems.push('Interview date is required');
+  if (v.email && !/^\S+@\S+\.\S+$/.test(v.email)) problems.push('Email looks invalid');
+  if (problems.length) return toast(problems.join(' · '), true);
+
+  const prev = DB.candidates.filter(c => c.aadhaar === v.aadhaar && c.id !== editId).sort((a, b) => (b.interviewDate || '').localeCompare(a.interviewDate || ''));
+  if (!editId && prev.length) {
+    const pending = prev.filter(p => p.status === 'Pending Interview');
+    const ok = await confirmBox('Repeat candidate', `<p>This Aadhaar already has <b>${prev.length}</b> interview record${prev.length > 1 ? 's' : ''}. Last: <b>${fmtDate(prev[0].interviewDate)}</b> – ${badge(prev[0].status)}.</p>${pending.length ? '<div class="alert err">One record is still <b>Pending Interview</b>. Consider adding feedback to it instead of creating a new record.</div>' : ''}<p>Save this as a new (repeat) interview?</p>`, 'Save as repeat');
+    if (!ok) return;
+  }
+  if (!await askPassword(editId ? 'admin' : 'entry')) return;
+  try {
+    if (editId) {
+      const id = editId;
+      await mutate(d => {
+        const c = d.candidates.find(x => x.id === id); if (!c) throw new Error('This record was deleted by someone else.');
+        Object.assign(c, v, { updatedAt: nowIso(), updatedBy: S.user });
+      }, `Edit candidate ${v.name}`);
+      toast('Changes saved');
+    } else {
+      const ref = await mutate(d => {
+        d.lastRef += 1; const refNo = 'INT-' + String(d.lastRef).padStart(4, '0');
+        d.candidates.push(Object.assign({ id: 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7), refNo }, v, { feedback: [], createdAt: nowIso(), createdBy: S.user }));
+        return refNo;
+      }, `Add candidate ${v.name}`);
+      toast(`Saved as ${ref}`);
+    }
+    resetAddForm(); switchTab('list');
+  } catch (err) { if (!err.silent) toast(err.message, true); }
+});
+
+async function deleteCandidate(id) {
+  const c = DB.candidates.find(x => x.id === id); if (!c) return;
+  if (!await askPassword('admin')) return;
+  if (!await confirmBox('Delete record?', `<p>Permanently delete <b>${esc(c.refNo)} – ${esc(c.name)}</b> (${fmtDate(c.interviewDate)}) and its ${c.feedback.length} feedback round(s)?</p><p class="muted small">It can still be recovered from the GitHub commit history.</p>`, 'Delete', true)) return;
+  try { await mutate(d => { d.candidates = d.candidates.filter(x => x.id !== id); }, `Delete candidate ${c.refNo} ${c.name}`); toast('Deleted'); }
+  catch (e) { if (!e.silent) toast(e.message, true); }
+}
+
+/* ---------------- Phase 2: feedback ---------------- */
+const formFb = $('#form-fb');
+function renderFbSelect() {
+  if (!DB) return;
+  const sel = $('#fb-cand'), cur = sel.value, all = $('#fb-showall').checked;
+  const list = DB.candidates.filter(c => all || ['Pending Interview', 'Waiting', 'On Hold'].includes(c.status) || c.id === cur)
+    .sort((a, b) => (a.status === 'Pending Interview' ? 0 : 1) - (b.status === 'Pending Interview' ? 0 : 1) || (b.interviewDate || '').localeCompare(a.interviewDate || ''));
+  sel.innerHTML = '<option value="">— Select candidate —</option>' + list.map(c => `<option value="${c.id}">${esc(c.refNo)} · ${esc(c.name)} · ${esc(c.position)} · ${fmtDate(c.interviewDate)} · ${esc(c.status)}</option>`).join('');
+  sel.value = list.some(c => c.id === cur) ? cur : '';
+  onFbCandChange();
+}
+$('#fb-showall').onchange = renderFbSelect;
+$('#fb-cand').onchange = () => { fbEdit = null; resetFbForm(true); onFbCandChange(); };
+function onFbCandChange() {
+  const c = DB && DB.candidates.find(x => x.id === $('#fb-cand').value);
+  if (!c) { $('#fb-summary').innerHTML = ''; return; }
+  const n = repeatInfo()[c.aadhaar].length;
+  $('#fb-summary').innerHTML = `<div class="cand-summary"><b>${esc(c.name)}</b> ${badge(c.status)} ${n > 1 ? `<span class="badge b-rep">Repeat · ${n} records</span>` : ''}
+    <div class="small muted">${esc(c.position)} · ${esc(c.department)} · Exp ${esc(c.experience || '–')} yrs · Current ${money(c.currentCTC) || '–'} · Expected ${money(c.expectedCTC) || '–'} · Notice ${esc(c.noticePeriod || '–')} days</div>
+    ${c.hrRemarks ? `<div class="small" style="margin-top:4px"><b>HR:</b> ${esc(c.hrRemarks)}</div>` : ''}
+    ${c.feedback.length ? `<div class="small" style="margin-top:6px"><b>Earlier rounds:</b> ${c.feedback.map(f => `${esc(f.round)} (${esc(f.interviewer)}) – ${esc(f.result)}`).join('; ')}</div>` : ''}
+    <button class="link" style="padding-left:0" id="fb-view">View full profile</button></div>`;
+  $('#fb-view').onclick = () => viewCandidate(c.id);
+  if (!fbEdit) { if (!formFb.date.value) formFb.date.value = today(); if (!formFb.interviewer.value) formFb.interviewer.value = c.interviewerAssigned || ''; if (!formFb.finalDepartment.value) formFb.finalDepartment.value = c.department || ''; }
+}
+function toggleFbFields() { const r = $('#fb-result').value; $('#fb-selected-fields').style.display = r === 'Selected' || r === 'On Hold' || r === 'Waiting' ? '' : 'none'; $('#fb-reason-field').style.display = r && r !== 'Selected' ? '' : 'none'; }
+$('#fb-result').onchange = toggleFbFields;
+function resetFbForm(keepCand) {
+  formFb.reset(); formFb.date.value = today(); toggleFbFields();
+  $('#fb-title').textContent = 'Phase 2 · Interview feedback'; $('#fb-submit').textContent = 'Save feedback'; $('#fb-cand').disabled = false;
+  if (!keepCand) { $('#fb-cand').value = ''; onFbCandChange(); }
+}
+$('#fb-cancel').onclick = () => { fbEdit = null; resetFbForm(); };
+
+async function startFbEdit(id, idx) {
+  if (!await askPassword('admin')) return;
+  const c = DB.candidates.find(x => x.id === id); if (!c || !c.feedback[idx]) return;
+  closeModal(true); $('#fb-showall').checked = true; switchTab('feedback');
+  $('#fb-cand').value = id; fbEdit = { id, idx };
+  formFb.reset(); setFormVals(formFb, c.feedback[idx]); toggleFbFields(); onFbCandChange();
+  $('#fb-cand').disabled = true; $('#fb-title').textContent = `Editing round ${idx + 1} of ${c.name}`; $('#fb-submit').textContent = 'Save changes';
+}
+async function deleteRound(id, idx) {
+  if (!await askPassword('admin')) return;
+  const c = DB.candidates.find(x => x.id === id); const f = c && c.feedback[idx]; if (!f) return;
+  if (!await confirmBox('Delete feedback round?', `<p>Delete the <b>${esc(f.round)}</b> round by ${esc(f.interviewer)} on ${fmtDate(f.date)}?</p>`, 'Delete', true)) return;
+  try {
+    await mutate(d => { const x = d.candidates.find(y => y.id === id); if (!x) throw new Error('Record no longer exists.'); const i = x.feedback.findIndex(y => y.fid === f.fid); if (i < 0) throw new Error('Round no longer exists.'); x.feedback.splice(i, 1); }, `Delete feedback round for ${c.name}`);
+    toast('Round deleted'); viewCandidate(id);
+  } catch (e) { if (!e.silent) toast(e.message, true); }
+}
+
+formFb.addEventListener('submit', async e => {
+  e.preventDefault();
+  if (!connected) return toast('Not connected – press Refresh.', true);
+  const id = fbEdit ? fbEdit.id : $('#fb-cand').value;
+  const c = DB.candidates.find(x => x.id === id);
+  const v = formVals(formFb);
+  const problems = [];
+  if (!c) problems.push('Select a candidate');
+  if (!v.interviewer) problems.push('Interviewer name is required');
+  if (!v.date) problems.push('Interview date is required');
+  if (!v.result) problems.push('Result is required');
+  if (!v.comments) problems.push('Comments are required');
+  if (problems.length) return toast(problems.join(' · '), true);
+  if (v.result === 'Not Selected') { v.offeredSalary = ''; v.designation = ''; v.joiningDate = ''; v.finalDepartment = ''; }
+  if (v.result === 'Selected') v.reason = '';
+  const editing = fbEdit;
+  if (!await askPassword(editing ? 'admin' : 'entry')) return;
+  try {
+    await mutate(d => {
+      const x = d.candidates.find(y => y.id === id); if (!x) throw new Error('This candidate was deleted by someone else.');
+      if (editing) {
+        const orig = c.feedback[editing.idx];
+        const i = x.feedback.findIndex(y => y.fid === orig.fid); if (i < 0) throw new Error('This round was deleted by someone else.');
+        Object.assign(x.feedback[i], v, { updatedAt: nowIso(), updatedBy: S.user });
+      } else {
+        x.feedback.push(Object.assign({ fid: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6) }, v, { createdAt: nowIso(), createdBy: S.user }));
+      }
+    }, `${editing ? 'Edit' : 'Add'} feedback for ${c.name}: ${v.result}`);
+    toast('Feedback saved – status: ' + v.result);
+    fbEdit = null; resetFbForm(); switchTab('list');
+  } catch (err) { if (!err.silent) toast(err.message, true); }
+});
+
+/* ---------------- admin tools ---------------- */
+$('#btn-save-depts').onclick = async () => {
+  if (!DB || !await askPassword('admin')) return;
+  const list = [...new Set($('#set-depts').value.split(',').map(s => s.trim()).filter(Boolean))];
+  if (!list.length) return toast('Enter at least one department', true);
+  try { await mutate(d => { d.settings.departments = list; }, 'Update departments'); toast('Departments saved'); } catch (e) { if (!e.silent) toast(e.message, true); }
+};
+$('#btn-admin-pw').onclick = async () => {
+  if (!DB || !await askPassword('admin')) return;
+  const a = await newPasswordModal('Change admin password', 'Only managers should know the admin password.', 8);
+  if (!a) return;
+  try { const h = await pwHash(a); await mutate(d => { d.settings.adminPwHash = h; }, 'Change admin password'); toast('Admin password changed'); } catch (e) { if (!e.silent) toast(e.message, true); }
+};
+$('#btn-team-pw').onclick = async () => {
+  if (!DB || !await askPassword('admin')) return;
+  const np = await newPasswordModal('Change team password', 'The data will be re-encrypted with the new password. Everyone must then log in with the new password. Tell your team after saving.', 10);
+  if (!np) return;
+  busy(true, 'Re-encrypting…');
+  const old = { pw: S.pw, salt: S.salt }; let dataSaved = false;
+  try {
+    for (let attempt = 0; ; attempt++) {
+      S.pw = old.pw; S.salt = old.salt;
+      const { data, sha } = await storeLoad();          // read with the old password
+      normalize(data); data.log.push({ at: nowIso(), by: S.user, action: 'Change team password' });
+      S.pw = np; S.salt = '';                            // new password + fresh salt
+      try { await storeSave(data, sha, 'Change team password'); DB = data; break; }
+      catch (e) { if (!e.conflict || attempt >= 4) throw e; }
+    }
+    dataSaved = true;
+    await writeConfig(S.token, np, `Change team password [by ${S.user}]`);
+    renderAll(); toast('Team password changed. Share the new password with the HR team.');
+  } catch (e) {
+    if (dataSaved) { toast('Data now uses the new password, but the login file could not be updated (' + e.message + '). Click "Replace GitHub token" and paste the same token again to finish.', true); return; }
+    S.pw = old.pw; S.salt = old.salt;
+    toast('Could not change the password: ' + e.message, true);
+  } finally { busy(false); }
+};
+$('#btn-token').onclick = async () => {
+  if (!DB || !await askPassword('admin')) return;
+  openModal(`<h3>Replace GitHub token</h3><p class="muted small">Paste a new fine-grained token (this repository only, Contents: Read and write). It is stored encrypted with the team password.</p><input type="password" id="tk-in" placeholder="github_pat_…"><div class="err-text" id="tk-err"></div><div class="actions"><button class="btn-sec" id="tk-no">Cancel</button><button class="btn" id="tk-ok">Save token</button></div>`);
+  $('#tk-no').onclick = () => closeModal();
+  $('#tk-ok').onclick = async () => {
+    const t = $('#tk-in').value.trim(); if (!t) return;
+    busy(true, 'Checking token…');
+    try {
+      const r = await fetch(api('') + '?_=' + Date.now(), { headers: ghHeaders(t), cache: 'no-store' });
+      if (!r.ok) throw await ghErr(r);
+      await writeConfig(t, S.pw, `Replace GitHub token [by ${S.user}]`);
+      S.token = t; closeModal(true); toast('Token replaced');
+    } catch (e) { $('#tk-err').textContent = e.message; }
+    finally { busy(false); }
+  };
+};
+function download(name, text, type) { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+$('#btn-export').onclick = async () => {
+  if (!DB || !await askPassword('admin')) return;
+  const rep = repeatInfo();
+  const cols = ['Ref','Aadhaar','Name','Mobile','Email','DOB','Gender','Qualification','Experience (yrs)','Current company','Location','Current CTC','Expected CTC','Notice (days)','Position','Department','Interview date','Interviewer assigned','Source','Referred by','HR remarks','Status','Times interviewed','Rounds','Last interviewer','Last round','Last rating','Last comments','Reason','Offered salary','Final department','Designation','Joining date','Entered by','Entered at'];
+  const q = x => { const s = String(x ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const rows = DB.candidates.map(c => { const f = c.feedback[c.feedback.length - 1] || {}; return [c.refNo, "'" + c.aadhaar, c.name, "'" + c.phone, c.email, c.dob, c.gender, c.qualification, c.experience, c.currentCompany, c.location, c.currentCTC, c.expectedCTC, c.noticePeriod, c.position, c.department, c.interviewDate, c.interviewerAssigned, c.source, c.referredBy, c.hrRemarks, c.status, rep[c.aadhaar].length, c.feedback.length, f.interviewer, f.round, f.rating, f.comments, f.reason, f.offeredSalary, f.finalDepartment, f.designation, f.joiningDate, c.createdBy, c.createdAt]; });
+  download(`interviews_${today()}.csv`, '﻿' + [cols, ...rows].map(r => r.map(q).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+};
+$('#btn-backup').onclick = async () => { if (!DB || !await askPassword('admin')) return; download(`interview-backup_${today()}.json`, JSON.stringify(DB, null, 2), 'application/json'); toast('Backup downloaded – it is NOT encrypted, keep it safe.'); };
+$('#btn-log').onclick = async () => {
+  if (!DB || !await askPassword('admin')) return;
+  openModal(`<div style="display:flex;justify-content:space-between"><h3>Activity log (latest 300)</h3><button class="btn-sec" id="lg-close">Close</button></div><div class="tablewrap"><table style="min-width:0"><thead><tr><th>When</th><th>Who</th><th>Action</th></tr></thead><tbody>${DB.log.slice(-300).reverse().map(l => `<tr><td class="small" style="white-space:nowrap">${fmtDT(l.at)}</td><td>${esc(l.by)}</td><td>${esc(l.action)}</td></tr>`).join('')}</tbody></table></div>`, true);
+  $('#lg-close').onclick = () => closeModal();
+};
+
+/* ---------------- header buttons, auto-logout & startup ---------------- */
+$('#btn-refresh').onclick = () => refresh();
+$('#btn-lock').onclick = () => forceLogout('You have logged out.');
+document.addEventListener('visibilitychange', () => { if (!document.hidden && connected && !$('#modal').classList.contains('open') && !$('#busy').classList.contains('open')) refresh(true); });
+let lastActivity = Date.now();
+['mousedown', 'keydown', 'touchstart', 'scroll'].forEach(ev => document.addEventListener(ev, () => lastActivity = Date.now(), { passive: true }));
+setInterval(() => { if (S.token && Date.now() - lastActivity > IDLE_MINUTES * 60000) forceLogout(`Logged out after ${IDLE_MINUTES} minutes of inactivity.`); }, 30000);
+
+startGate();
+</script>
+</body>
+</html>
