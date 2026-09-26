@@ -1,0 +1,19 @@
+{
+  "app": "interview-tracker",
+  "version": 2,
+  "owner": "shivsons333-dot",
+  "repo": "interview-tracker",
+  "mainBranch": "main",
+  "dataBranch": "data",
+  "dataPath": "data/candidates.enc.json",
+  "token": {
+    "app": "interview-tracker",
+    "note": "Encrypted. Open with the Interview Tracker app and the team password.",
+    "enc": "AES-256-GCM",
+    "kdf": "PBKDF2-SHA256",
+    "iter": 600000,
+    "salt": "wkjWPt+xpQ6IuPBB2BGSzw==",
+    "iv": "M2ensoySaQtXG8O8",
+    "ct": "kDgVLunq6KuFQbXN7hkPcmzy1OLxOG4ZjqFeYGSdwalHxh2QSvK2MnD2NU7G1v1iEr7TVAWS2/yD4r2ecIl986SWNfM1u9n8hECAtWBg9VU43vMM0s6DdkF2CuP8HgvD8fCOuG+DK1O1FXD1MA=="
+  }
+}
